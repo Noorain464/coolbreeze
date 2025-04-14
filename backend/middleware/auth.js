@@ -50,3 +50,5 @@ export const requireRole = (roles) => (req, res, next) => {
   }
   next();
 };
+
+export const isRider = requireRole(['rider']);
