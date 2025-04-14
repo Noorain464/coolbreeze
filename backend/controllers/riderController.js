@@ -8,22 +8,16 @@ export const getRiders = async (req, res) => {
 };
 
 export const createRider = async (req, res) => {
-  const { products, customerDetails } = req.body;
+  const { name, email } = req.body;
 
-  if (!products || !customerDetails) {
-    return res.status(400).json({ message: 'Products and customer details are required' });
+  if (!name || !email) {
+    return res.status(400).json({ message: 'Name and email are required' });
   }
 
-  const order = new Order({
-    products,
-    customerDetails,
-    assignedRider: req.user.id,
-    status: 'pending',
-  });
-
-  await order.save();
-  res.status(201).json(order);
-}
+  const rider = new Rider({ name, email });
+  await rider.save();
+  res.status(201).json(rider);
+};
 export const updateRiderStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;

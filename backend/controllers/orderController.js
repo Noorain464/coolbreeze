@@ -15,7 +15,10 @@ export const getOrders = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   const { id } = req.params;
   const { status, riderId } = req.body;
-
+  const validStatuses = ['Paid', 'Shipped', 'Delivered', 'Undelivered'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ message: 'Invalid status' });
+  }
   const order = await Order.findById(id);
   if (!order) return res.status(404).json({ message: 'Order not found' });
 
