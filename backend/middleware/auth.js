@@ -1,54 +1,35 @@
-// middleware/auth.js
 import admin from 'firebase-admin';
 import User from '../models/User.js';
 import ApprovedEmail from '../models/ApprovedEmail.js';
+import serviceAccount from '../config/cool-breeze-d0e22-firebase-adminsdk-fbsvc-195e07f7e9.json' assert { type: 'json' };
 
 admin.initializeApp({
-  credential: admin.credential.applicationDefault(), // Or use cert from Firebase
+  credential: admin.credential.cert(serviceAccount),
 });
 
 export const verifyFirebaseToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
+    console.log('Authorization header missing or invalid:', authHeader);
     return res.status(401).json({ message: 'No token provided' });
   }
 
   const idToken = authHeader.split(' ')[1];
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const email = decodedToken.email;
-    const name = decodedToken.name || 'User';
-
-    const approved = await ApprovedEmail.findOne({ email });
-    if (!approved) {
-      return res.status(403).json({ message: 'Email not approved' });
-    }
-
-    // Register user if not exists
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = new User({ email, name, role: 'customer' });
-      await user.save();
-    }
-
+    console.log('Decoded Token:', decodedToken); // Log the decoded token
     req.user = {
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
+      email: decodedToken.email,
     };
-
     next();
   } catch (err) {
+    console.error('Error verifying Firebase token:', err.message);
     return res.status(401).json({ message: 'Invalid token', error: err.message });
   }
 };
-
-export const requireRole = (roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
-    return res.status(403).json({ message: 'Access denied' });
+export const isRider = (req, res, next) => {
+  if (req.user.role !== 'rider') {
+    return res.status(403).json({ message: 'Access denied. Riders only.' });
   }
   next();
 };
-
-export const isRider = requireRole(['rider']);
